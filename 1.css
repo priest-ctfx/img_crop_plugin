@@ -1,0 +1,28 @@
+html body {
+	padding: 0px;
+	margin: 0px;
+}
+
+#crop_inner {
+	width: 400px; /* val */
+	height: 400px; /* val */
+	position: relative;
+	top: 0px;
+	left: 50%;
+	background: url('./img/back.png');
+	margin-left: -200px; /* val */
+}
+
+#display_img {
+	position: absolute;
+}
+
+#crop_area {
+	position: absolute;
+	top: 0px;
+	left: 0px;
+	opacity: 0.6;
+	width: 100%; /* val */
+	height: 100%; /* val */
+	box-shadow: 0px 0px 0px 30px rgb(255,255,255) inset;
+}

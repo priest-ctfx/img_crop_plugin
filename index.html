@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no, width=device-width">
+	<link rel="stylesheet" type="text/css" href="./1.css">
+</head>
+<body>
+	<div style="height: 100px;"></div> 
+
+	<div id="crop_containter">
+		<div id="crop_inner">
+			<img id="display_img" src="">
+			<div id="crop_area"></div>
+		</div>
+
+		<div id="crop_handlers">
+			<div id="move_handler">
+				<button id="move_top_btn">Top</button>
+				<button id="move_right_btn">Right</button>
+				<button id="move_down_btn">Down</button>
+				<button id="move_left_btn">Left</button>
+			</div>
+
+			<div id="scale_handler">
+				<button id="scale_big_btn">Big</button>
+				<button id="scale_small_btn">Small</button>
+			</div>
+
+			<div id="img_export">
+				<button id="export_btn">Export !</button>
+			</div>
+		</div>
+	</div>
+</body>
+
+<script type="text/javascript" src="./data.js"></script>
+<script type="text/javascript" src="./init.js"></script>
+<script type="text/javascript" src="./move.js"></script>
+</html>
