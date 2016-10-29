@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no, width=device-width">
+	<link rel="stylesheet" type="text/css" href="./1.css">
+</head>
+<body>
+	<div style="height: 100px;"></div>
+	<div id="crop_containter">
+		<div id="crop_inner"></div>
+
+		<div id="crop_handlers">
+			<div id="move_handler">
+				<button id="move_top_btn">Top</button>
+				<button id="move_right_btn">Right</button>
+				<button id="move_down_btn">Down</button>
+				<button id="move_left_btn">Left</button>
+			</div>
+
+			<div id="scale_handler">
+				<button id="scale_big_btn">Big</button>
+				<button id="scale_small_btn">Small</button>
+			</div>
+
+			<div id="cut_handler">
+				<button id="cut_big_top_bottom_btn">cut_big_top_bottom</button>
+				<button id="cut_small_top_bottom_btn">cut_small_top_bottom</button>
+				<button id="cut_big_left_right_btn">cut_big_left_right</button>
+				<button id="cut_small_left_right_btn">cut_small_left_right</button>
+			</div>
+
+			<div id="img_export">
+				<button id="export_btn">Export !</button>
+			</div>
+		</div>
+	</div>
+</body>
+
+<script type="text/javascript">
+	(function () {
+		var _returnCreateCropDOMData;
+		var _returnLoadImageData;
+
+		var _createCropDOM = function (appendIntoDOM) {
+			var display_img_DOM = document.createElement('img');
+			display_img_DOM.id = 'display_img';
+
+			var crop_area_DOM = document.createElement('div');
+			crop_area_DOM.id = 'crop_area';
+
+			var appendDOMFragment = document.createDocumentFragment();
+			appendDOMFragment.appendChild(display_img_DOM);
+			appendDOMFragment.appendChild(crop_area_DOM);
+
+			// append All
+			appendIntoDOM.appendChild(appendDOMFragment);
+
+			return {
+				display_img: display_img_DOM,
+				crop_area: crop_area_DOM
+			}
+		}
+
+		var imgPluginApi = function (cropInner, imgData) {
+			var cropInnerDOM = document.getElementById(cropInner);
+			_returnCreateCropDOMData = function () {
+				return _createCropDOM(cropInnerDOM);
+			}
+		};
+
+		imgPluginApi.prototype = {
+			loadImg: function(imageData) {
+				this.imageData = imageData;
+
+				// 接收上个函数的闭包内容
+				var returnCreateCropDOMData = _returnCreateCropDOMData();
+
+				// 图片原始url
+				var IMG_URL = imageData.origin_image.origin_img_url;
+
+				// 原始图片宽高比例
+				var W_H_SCALE = imageData.origin_image.origin_image_width / imageData.origin_image.origin_image_height;
+
+				// 根据原始图片宽高比例，计算出图片类型:  h 瘦高型或正方形，w胖矮型
+				var IMAGE_TYPE = W_H_SCALE > 1 ? 'w' : 'h';
+
+				// 总宽度/高度
+				var ALL_SPACE = 400;
+
+				// 阴影余白宽度和高度，默认左右上下都有30的阴影余白
+				var padding_space_left_right = 0;
+				var padding_space_top_bottom = 0;
+
+				// 默认图片实际显示的宽高
+				var display_width = 0;
+				var display_height = 0;
+
+				// 默认图片实际显示位置
+				var display_left = 0;
+				var display_top = 0;
+
+				// 计算阴影余白，图片显示大小，位置
+				if (IMAGE_TYPE = 'w') {
+					// 如果是胖矮型图片
+
+					// 左右余白阴影为30
+					padding_space_left_right = 30;
+
+					// 计算图片实际显示的宽 = 总宽度 - 阴影余白（左右2个）
+					display_width = ALL_SPACE - (padding_space_left_right * 2);
+
+					// 计算图片实际显示的高 = 1/原始图片宽高比例 * 图片实际显示的宽
+					display_height = (1 / W_H_SCALE) * display_width;
+
+					// 上下余白阴影 = (总高度 - 图片实际显示的高) / 2
+					padding_space_top_bottom = (ALL_SPACE - display_height) / 2;
+
+					// 计算图片实际显示位置
+					display_left =  padding_space_left_right;
+					display_top = (ALL_SPACE - display_height) / 2;
+				} else {
+					// 如果是瘦高型或正方形图片
+
+					//上下余白阴影为30
+					padding_space_top_bottom = 30;
+
+					// 计算图片实际显示的高 = 总高度 - 阴影余白（上下2个）
+					display_height = ALL_SPACE - (padding_space_top_bottom * 2);
+
+					// 计算图片实际显示的宽 = 原始图片宽高比例 * 图片实际显示的高
+					display_width = W_H_SCALE * display_height;
+
+					// 左右余白阴影 = (总宽度 - 图片实际显示的宽) / 2
+					padding_space_left_right = (ALL_SPACE - display_width) / 2;
+
+					// 计算图片实际显示位置
+					display_top = padding_space_top_bottom;
+					display_left =  (ALL_SPACE - display_width) / 2;
+				}
+
+				// 设置有效编辑区域的宽度/高度
+				var enable_space_width = ALL_SPACE - (padding_space_left_right * 2);
+				var enable_space_height = ALL_SPACE - (padding_space_top_bottom * 2);
+
+				// 如果有改动
+				if (imageData.changeFlag) {
+					display_width = imageData.origin_image.origin_image_width / imageData.scale_origin_current;
+					display_height = imageData.origin_image.origin_image_height / imageData.scale_origin_current;
+
+					enable_space_width = imageData.image_width / imageData.scale_origin_current;
+					enable_space_height = imageData.image_height / imageData.scale_origin_current;
+
+					padding_space_left_right = (ALL_SPACE - enable_space_width) / 2;
+					padding_space_top_bottom = (ALL_SPACE - enable_space_height) / 2;
+
+				    var crop_startX = imageData.crop_origin_startX / imageData.scale_origin_current;
+				    var crop_startY = imageData.crop_origin_startY / imageData.scale_origin_current;
+
+					display_left = 0 - (crop_startX - padding_space_left_right);
+					display_top = 0 - (crop_startY - padding_space_top_bottom);
+				}
+
+				// 余白阴影div
+				var crop_area = returnCreateCropDOMData.crop_area; // document.getElementById('crop_area');
+
+				// 设置剪裁区域阴影
+				crop_area.style.boxShadow =	'0px ' + padding_space_top_bottom + 'px 0px 0px rgb(255,255,255) inset,' + 	// top
+											'0px -' + padding_space_top_bottom + 'px 0px 0px rgb(255,255,255) inset,' + // bottom
+											padding_space_left_right + 'px 0px 0px 0px rgb(255,255,255) inset,' +  		// left
+											'-' + padding_space_left_right + 'px 0px 0px 0px rgb(255,255,255) inset'; 	// right
+
+
+
+				var display_img = returnCreateCropDOMData.display_img; // document.getElementById('display_img');
+				display_img.src = IMG_URL;
+
+				display_img.style.width = display_width + 'px';
+				display_img.style.height = display_height + 'px';
+
+				display_img.style.top = display_top + 'px';
+				display_img.style.left = display_left + 'px';
+
+
+				var move_top_btn = document.getElementById('move_top_btn');
+				var move_right_btn = document.getElementById('move_right_btn');
+				var move_down_btn = document.getElementById('move_down_btn');
+				var move_left_btn = document.getElementById('move_left_btn');
+
+				var scale_big_btn = document.getElementById('scale_big_btn');
+				var scale_small_btn = document.getElementById('scale_small_btn');
+
+				
+
+				// 每次点击移动的距离
+				var DELTA_MOVE_PER_CLICK = 10;
+				// 每次点击放大的像素
+				var DELTA_SCALE_PER_CLICK = 10;
+
+				// 上移按钮
+				move_top_btn.addEventListener('click', function () {
+					// 图片高度小于等于可视高度，不能向上下移动
+					if ( parseFloat(display_img.style.height) <= enable_space_height) {
+						return;
+					}
+
+					// 图片即将上移到的top值
+					var move_to_top = parseFloat(display_img.style.top) - DELTA_MOVE_PER_CLICK;
+
+					// 最大向上移动限制
+					var display_height = parseFloat(display_img.style.height);
+					if (move_to_top + display_height <= enable_space_height + padding_space_top_bottom) { //减少bug，加上=
+						// 图片下边不能在视区下边范围之内
+						move_to_top = enable_space_height + padding_space_top_bottom - display_height;
+					}
+
+					display_img.style.top = move_to_top + 'px';
+				});
+
+				// 下移按钮
+				move_down_btn.addEventListener('click', function () {
+					// 图片高度小于等于可视高度，不能向上下移动
+					if ( parseFloat(display_img.style.height) <= enable_space_height) {
+						return;
+					}
+
+					// 图片即将下移到的top值
+					var move_to_top = parseFloat(display_img.style.top) + DELTA_MOVE_PER_CLICK;
+
+					// 最大向下移动限制
+					if (move_to_top >= padding_space_top_bottom) { // 减少bug，加上=
+						// 图片上边不能在可视区上边范围之内
+						move_to_top = padding_space_top_bottom;
+					}
+
+					display_img.style.top = move_to_top + 'px';
+				});
+
+				// 左移按钮
+				move_left_btn.addEventListener('click', function () {
+					// 图片宽度小于等于可视宽度，不能向左右移动
+					if ( parseFloat(display_img.style.width) <= enable_space_width) {
+						return;
+					}
+
+					// 图片即将移动到的left值
+					var move_to_left = parseFloat(display_img.style.left) - DELTA_MOVE_PER_CLICK;
+
+					// 最大移动限制
+					var display_width = parseFloat(display_img.style.width);
+					if ( (move_to_left + display_width) <= (enable_space_width + padding_space_left_right) ) { // 减少bug，加上=
+						// 图片右边不能在可视区右边范围之内
+						move_to_left = enable_space_width + padding_space_left_right - display_width;
+					}
+
+					display_img.style.left = move_to_left + 'px';
+				});
+
+				// 右移按钮
+				move_right_btn.addEventListener('click', function () {
+					// 图片宽度小于等于可视宽度，不能向左右移动
+					if ( parseFloat(display_img.style.width) <= enable_space_width) {
+						return;
+					}
+
+					// 图片即将移动到的left值
+					var move_to_left = parseFloat(display_img.style.left) + DELTA_MOVE_PER_CLICK;
+
+					// 最大移动限制
+					if (move_to_left >= padding_space_left_right) { // 减少bug，加上=
+						// 图片左边不能在可视区左边范围之内
+						move_to_left = padding_space_left_right;
+					}
+
+					display_img.style.left = move_to_left + 'px';
+				});
+
+				// 放大按钮
+				scale_big_btn.addEventListener('click', function () {
+					if (IMAGE_TYPE == 'w') {
+						// 图片如果是胖矮型，则宽度每次加一个固定值，高度会按照比例随宽度变化
+
+						// 图片即将放大到的宽度
+						var scale_to_width = parseFloat(display_img.style.width) + DELTA_SCALE_PER_CLICK;
+						// 图片即将放大到的高度
+						var scale_to_height = (1 / W_H_SCALE) * scale_to_width;
+
+						// 当高度放大到区域总高度，就不能再放大了
+						// if (scale_to_height >= ALL_SPACE) {
+						if (false) {
+							scale_to_height = ALL_SPACE;
+							scale_to_width = W_H_SCALE * scale_to_height;
+
+							display_img.style.height = scale_to_height + 'px';
+							display_img.style.width = scale_to_width + 'px';
+
+							display_img.style.top = '0px';
+							display_img.style.left = (ALL_SPACE - parseFloat(display_img.style.width)) / 2 + 'px';
+						} else {
+							// 图片宽度的增量
+							var delta_width = DELTA_SCALE_PER_CLICK;
+
+							// 图片高度的增量
+							var delta_height = scale_to_height - parseFloat(display_img.style.height);
+
+							// 图片即将放大到的尺寸生效
+							display_img.style.width = scale_to_width + 'px';
+							display_img.style.height = scale_to_height + 'px';
+
+							// 设置宽度放大后的left值
+							display_img.style.left = parseFloat(display_img.style.left) - (delta_width / 2) + 'px';
+
+							// 设置宽度放大后的top值
+							display_img.style.top = parseFloat(display_img.style.top) - (delta_height / 2) + 'px';
+						}
+					} else {
+						// 图片如果是瘦高型或正方形，则高度每次加一个固定值，宽度会按照比例随高度变化
+
+						// 图片即将放大到的高度
+						var scale_to_height = parseFloat(display_img.style.height) + DELTA_SCALE_PER_CLICK;
+						// 图片即将放大到的宽度
+						var scale_to_width = W_H_SCALE * scale_to_height;
+
+						// 当宽度放大到区域总高度，就不能再放大了
+						// if (scale_to_width >= ALL_SPACE) {
+						if (false) {
+							scale_to_width = ALL_SPACE;
+							scale_to_height = (1 / W_H_SCALE) * scale_to_width;
+
+							display_img.style.width = scale_to_width + 'px';
+							display_img.style.height = scale_to_height + 'px';
+
+							display_img.style.left = '0px';
+							display_img.style.top = ( ALL_SPACE - parseFloat(display_img.style.height) ) / 2 + 'px';
+						} else {
+							// 图片高度的增量
+							var delta_height = DELTA_SCALE_PER_CLICK;
+
+							// 图片宽度的增量
+							var delta_width = scale_to_width - parseFloat(display_img.style.width);
+
+							// 图片即将放大到的尺寸生效
+							display_img.style.height = scale_to_height + 'px';
+							display_img.style.width = scale_to_width + 'px';
+							
+							// 设置宽度放大后的left值
+							display_img.style.left = parseFloat(display_img.style.left) - (delta_width / 2) + 'px';
+
+							// 设置宽度放大后的top值
+							display_img.style.top = parseFloat(display_img.style.top) - (delta_height / 2) + 'px';
+						}
+					}
+				});
+
+				// 缩小按钮
+				scale_small_btn.addEventListener('click', function () {
+					if (IMAGE_TYPE == 'w') {
+						// 图片如果是胖矮型，则宽度每次加一个固定值，高度会按照比例随宽度变化
+
+						// 图片即将缩小到的宽度
+						var scale_to_width = parseFloat(display_img.style.width) - DELTA_SCALE_PER_CLICK;
+						// 图片即将缩小到的高度
+						var scale_to_height = (1 / W_H_SCALE) * scale_to_width;
+
+						// 当宽度缩小到区域总宽度，就不能再缩小了
+						if ( scale_to_width <= (ALL_SPACE - (padding_space_left_right * 2)) ) {
+							scale_to_width = ALL_SPACE - (padding_space_left_right * 2);
+							scale_to_height = (1 / W_H_SCALE) * scale_to_width;
+
+							display_img.style.width = scale_to_width + 'px';
+							display_img.style.height = scale_to_height + 'px';
+
+							display_img.style.left = padding_space_left_right + 'px';
+							display_img.style.top = ( ALL_SPACE - parseFloat(display_img.style.height) ) / 2 + 'px';
+						} else {
+							// 图片宽度的增量
+							var delta_width = DELTA_SCALE_PER_CLICK;
+
+							// 图片高度的增量
+							var delta_height = parseFloat(display_img.style.height) - scale_to_height;
+
+							// 图片即将缩小到的尺寸生效
+							display_img.style.width = scale_to_width + 'px';
+							display_img.style.height = scale_to_height + 'px';
+
+							// 设置宽度缩小后的left值
+							display_img.style.left = parseFloat(display_img.style.left) + (delta_width / 2) + 'px';
+
+							// 设置宽度缩小后的top值
+							display_img.style.top = parseFloat(display_img.style.top) + (delta_height / 2) + 'px';	
+						}
+					} else {
+						// 图片如果是瘦高型或正方形，则高度每次加一个固定值，宽度会按照比例随高度变化
+
+						// 图片即将缩小到的高度
+						var scale_to_height = parseFloat(display_img.style.height) - DELTA_SCALE_PER_CLICK;
+						// 图片即将缩小到的宽度
+						var scale_to_width = W_H_SCALE * scale_to_height;
+
+						// 当高度缩小到区域总高度，就不能再缩小了
+						if ( scale_to_height <= (ALL_SPACE - (padding_space_top_bottom * 2)) ) {
+							scale_to_height = ALL_SPACE - (padding_space_top_bottom * 2);
+							scale_to_width = W_H_SCALE * scale_to_height;
+
+							display_img.style.width = scale_to_width + 'px';
+							display_img.style.height = scale_to_height + 'px';
+
+							display_img.style.top = padding_space_top_bottom + 'px';
+							display_img.style.left = ( ALL_SPACE - parseFloat(display_img.style.width) ) / 2 + 'px';
+						} else {
+							// 图片高度的增量
+							var delta_height = DELTA_SCALE_PER_CLICK;
+
+							// 图片宽度的增量
+							var delta_width = parseFloat(display_img.style.width) - scale_to_width;
+
+							// 图片即将缩小到的尺寸生效
+							display_img.style.height = scale_to_height + 'px';
+							display_img.style.width = scale_to_width + 'px';
+							
+							// 设置宽度缩小后的left值
+							display_img.style.left = parseFloat(display_img.style.left) + (delta_width / 2) + 'px';
+
+							// 设置宽度缩小后的top值
+							display_img.style.top = parseFloat(display_img.style.top) + (delta_height / 2) + 'px';
+						}
+					}
+				});
+
+				var cut_big_top_bottom_btn = document.getElementById('cut_big_top_bottom_btn');
+				cut_big_top_bottom_btn.addEventListener('click', function () {
+					padding_space_top_bottom = padding_space_top_bottom - 10;
+
+					crop_area.style.boxShadow =	'0px ' + padding_space_top_bottom + 'px 0px 0px rgb(255,255,255) inset,' + 	// top
+											'0px -' + padding_space_top_bottom + 'px 0px 0px rgb(255,255,255) inset,' + // bottom
+											padding_space_left_right + 'px 0px 0px 0px rgb(255,255,255) inset,' +  		// left
+											'-' + padding_space_left_right + 'px 0px 0px 0px rgb(255,255,255) inset'; 	// right
+
+					// 设置有效编辑区域的宽度/高度
+					// enable_space_width = ALL_SPACE - (padding_space_left_right * 2);
+					enable_space_height = ALL_SPACE - (padding_space_top_bottom * 2);
+				});
+
+				var cut_big_top_bottom_btn = document.getElementById('cut_small_top_bottom_btn');
+				cut_small_top_bottom_btn.addEventListener('click', function () {
+					padding_space_top_bottom = padding_space_top_bottom + 10;
+
+					crop_area.style.boxShadow =	'0px ' + padding_space_top_bottom + 'px 0px 0px rgb(255,255,255) inset,' + 	// top
+											'0px -' + padding_space_top_bottom + 'px 0px 0px rgb(255,255,255) inset,' + // bottom
+											padding_space_left_right + 'px 0px 0px 0px rgb(255,255,255) inset,' +  		// left
+											'-' + padding_space_left_right + 'px 0px 0px 0px rgb(255,255,255) inset'; 	// right
+
+					// 设置有效编辑区域的宽度/高度
+					// enable_space_width = ALL_SPACE - (padding_space_left_right * 2);
+					enable_space_height = ALL_SPACE - (padding_space_top_bottom * 2);
+				});
+
+				var cut_big_left_right_btn = document.getElementById('cut_big_left_right_btn');
+				cut_big_left_right_btn.addEventListener('click', function () {
+					padding_space_left_right = padding_space_left_right - 10;
+
+					crop_area.style.boxShadow =	'0px ' + padding_space_top_bottom + 'px 0px 0px rgb(255,255,255) inset,' + 	// top
+											'0px -' + padding_space_top_bottom + 'px 0px 0px rgb(255,255,255) inset,' + // bottom
+											padding_space_left_right + 'px 0px 0px 0px rgb(255,255,255) inset,' +  		// left
+											'-' + padding_space_left_right + 'px 0px 0px 0px rgb(255,255,255) inset'; 	// right
+
+					// 设置有效编辑区域的宽度/高度
+					enable_space_width = ALL_SPACE - (padding_space_left_right * 2);
+					// enable_space_height = ALL_SPACE - (padding_space_top_bottom * 2);
+				});
+
+				var cut_small_left_right_btn = document.getElementById('cut_small_left_right_btn');
+				cut_small_left_right_btn.addEventListener('click', function () {
+					padding_space_left_right = padding_space_left_right + 10;
+
+					crop_area.style.boxShadow =	'0px ' + padding_space_top_bottom + 'px 0px 0px rgb(255,255,255) inset,' + 	// top
+											'0px -' + padding_space_top_bottom + 'px 0px 0px rgb(255,255,255) inset,' + // bottom
+											padding_space_left_right + 'px 0px 0px 0px rgb(255,255,255) inset,' +  		// left
+											'-' + padding_space_left_right + 'px 0px 0px 0px rgb(255,255,255) inset'; 	// right
+
+					// 设置有效编辑区域的宽度/高度
+					enable_space_width = ALL_SPACE - (padding_space_left_right * 2);
+					// enable_space_height = ALL_SPACE - (padding_space_top_bottom * 2);
+				});
+
+				_returnLoadImageData = function () {
+					return {
+						display_img: display_img,
+						display_height: display_height,
+						enable_space_height: enable_space_height,
+						IMAGE_TYPE: IMAGE_TYPE,
+						enable_space_width: enable_space_width,
+						enable_space_height: enable_space_height,
+						padding_space_left_right: padding_space_left_right,
+						padding_space_top_bottom: padding_space_top_bottom
+					};
+				};
+
+				return this;
+			},
+
+			exportCropData: function() {
+				var imageData = this.imageData;
+				var returnLoadImageData = _returnLoadImageData();
+
+				var display_img = returnLoadImageData.display_img;
+				var padding_space_left_right = returnLoadImageData.padding_space_left_right;
+				var padding_space_top_bottom = returnLoadImageData.padding_space_top_bottom;
+				var IMAGE_TYPE = returnLoadImageData.IMAGE_TYPE;
+				var enable_space_width = returnLoadImageData.enable_space_width;
+				var enable_space_height = returnLoadImageData.enable_space_height;
+
+				
+				// 获得原图与现在图的比例
+				var scale_origin_current = 1;
+				if (IMAGE_TYPE == 'w') {
+					scale_origin_current = imageData.origin_image.origin_image_width / parseFloat(display_img.style.width);
+				} else {
+					scale_origin_current = imageData.origin_image.origin_image_height / parseFloat(display_img.style.height);
+				}
+
+				// 相对于现在的图，获得剪切范围
+				// 剪切开始x y坐标
+				var current_crop_startX = padding_space_left_right - parseFloat(display_img.style.left);
+				var current_crop_startY = padding_space_top_bottom - parseFloat(display_img.style.top);
+
+				// 剪切的尺寸
+				var currnet_crop_width = enable_space_width;
+				var currnet_crop_height = enable_space_height;
+
+				// 影射到原图片的尺寸
+				var origin_crop_startX = current_crop_startX * scale_origin_current;
+				var origin_crop_startY = current_crop_startY * scale_origin_current;
+				var origin_crop_width = currnet_crop_width * scale_origin_current;
+				var origin_crop_height = currnet_crop_height * scale_origin_current;
+
+				console.info('origin_crop_width');
+				console.info(origin_crop_width);
+
+				console.info('origin_crop_height');
+				console.info(origin_crop_height);
+
+				console.info('origin_crop_startX');
+				console.info(origin_crop_startX);
+
+				console.info('origin_crop_startY');
+				console.info(origin_crop_startY);
+
+				console.info('scale_origin_current');
+				console.info(scale_origin_current);
+				
+			}
+		};
+
+		this.imgPlugin = imgPluginApi;
+	})();
+
+	// var x = new imgPlugin('crop_inner').loadImg({
+	// 	img_url: './img/2.jpg',
+	// 	image_width: 422,
+	// 	image_height: 253,
+	// 	crop_origin_startX: 533,
+	// 	crop_origin_startY: 128,
+	// 	scale_origin_current: 2.56,
+	// 	changeFlag: true,
+	// 	origin_image: {
+	// 		origin_img_url: './img/1.jpg',
+	// 		origin_image_width: 1920,
+	// 		origin_image_height: 1080
+	// 	}
+	// });
+
+	var x = new imgPlugin('crop_inner').loadImg({
+		img_url: './img/2.jpg',
+		image_width: 162,
+		image_height: 396,
+		crop_origin_startX: 469,
+		crop_origin_startY: 63,
+		scale_origin_current: 2.49,
+		changeFlag: false,
+		origin_image: {
+			origin_img_url: './img/1.jpg',
+			origin_image_width: 1920,
+			origin_image_height: 1080
+		}
+	});
+
+	var export_btn = document.getElementById('export_btn');
+	export_btn.addEventListener('click', function () {
+		x.exportCropData();
+	});
+</script>
+
+</html>

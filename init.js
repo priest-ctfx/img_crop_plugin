@@ -63,6 +63,28 @@ if (IMAGE_TYPE = 'w') {
 	display_left =  (ALL_SPACE - display_width) / 2;
 }
 
+// 设置有效编辑区域的宽度/高度
+var enable_space_width = ALL_SPACE - (padding_space_left_right * 2);
+var enable_space_height = ALL_SPACE - (padding_space_top_bottom * 2);
+
+// 如果有改动
+if (imageData.changeFlag) {
+	display_width = imageData.origin_image.origin_image_width / imageData.scale_origin_current;
+	display_height = imageData.origin_image.origin_image_height / imageData.scale_origin_current;
+
+	enable_space_width = imageData.image_width / imageData.scale_origin_current;
+	enable_space_height = imageData.image_height / imageData.scale_origin_current;
+
+	padding_space_left_right = (ALL_SPACE - enable_space_width) / 2;
+	padding_space_top_bottom = (ALL_SPACE - enable_space_height) / 2;
+
+    var crop_startX = imageData.crop_origin_startX / imageData.scale_origin_current;
+    var crop_startY = imageData.crop_origin_startY / imageData.scale_origin_current;
+
+	display_left = 0 - (crop_startX - padding_space_left_right);
+	display_top = 0 - (crop_startY - padding_space_top_bottom);
+}
+
 // 余白阴影div
 var crop_area = document.getElementById('crop_area');
 
@@ -73,9 +95,6 @@ crop_area.style.boxShadow =	'0px ' + padding_space_top_bottom + 'px 0px 0px rgb(
 							'-' + padding_space_left_right + 'px 0px 0px 0px rgb(255,255,255) inset'; 	// right
 
 
-// 设置有效编辑区域的宽度/高度
-var enable_space_width = ALL_SPACE - (padding_space_left_right * 2);
-var enable_space_height = ALL_SPACE - (padding_space_top_bottom * 2);
 
 var display_img = document.getElementById('display_img');
 display_img.src = IMG_URL;

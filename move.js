@@ -323,8 +323,18 @@ export_btn.addEventListener('click', function () {
 	var origin_crop_width = currnet_crop_width * scale_origin_current;
 	var origin_crop_height = currnet_crop_height * scale_origin_current;
 
-	console.info(origin_crop_startX);
-	console.info(origin_crop_startY);
+	console.info('origin_crop_width');
 	console.info(origin_crop_width);
+
+	console.info('origin_crop_height');
 	console.info(origin_crop_height);
+
+	console.info('origin_crop_startX');
+	console.info(origin_crop_startX);
+
+	console.info('origin_crop_startY');
+	console.info(origin_crop_startY);
+
+	console.info('scale_origin_current');
+	console.info(scale_origin_current);
 });
